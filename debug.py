@@ -40,7 +40,7 @@ def normalize(name: str) -> str:
 
 def sort_files(path: Path, is_recursive=False):
 
-    main_folder_path = Path(sys.argv[1])
+    main_folder_path = Path('D:\GitHub\goit-python-hw-module-6\TestRenameFolder')
 
     if not is_recursive:
         for folder in folder_names:
@@ -54,7 +54,9 @@ def sort_files(path: Path, is_recursive=False):
         if item.is_dir():
             if item.name in folder_names:
                 continue
-
+            
+            # new_dir = path.joinpath(new_name)
+            # item.rename(new_dir)
             sort_files(item, is_recursive=True)
 
             if len(list(item.iterdir())) == 0:
@@ -84,14 +86,13 @@ def sort_files(path: Path, is_recursive=False):
             item.rename(new_path)
     
 
+
 def rename_all_folders(path):
-    
+    new_name = normalize(path.name)
+
     for item in path.iterdir():
 
         if item.is_dir():
-            
-            new_name = normalize(item.name)
-
             if item.name in folder_names:
                 continue
 
@@ -100,17 +101,13 @@ def rename_all_folders(path):
             item.rename(new_dir)
 
 
+        
+
 def main():
     
-    if len(sys.argv) < 2:
-        raise ValueError('Please enter the path to the folder you want to sort.')
+    path = Path('D:\GitHub\goit-python-hw-module-6\TestRenameFolder')
 
-    path = Path(sys.argv[1])
 
-    if not path.is_dir():
-        raise ValueError('Folder does not exists. Please check the path and try again.')
-
-    sort_files(path)
     rename_all_folders(path)
     
 
