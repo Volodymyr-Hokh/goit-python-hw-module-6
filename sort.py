@@ -1,3 +1,4 @@
+import json
 import re
 import shutil
 import sys
@@ -14,6 +15,17 @@ EXTENSIONS = {
 }
 
 folder_names = EXTENSIONS.keys()
+
+
+
+# Some containers to write results
+images = []
+video = []
+documents = []
+audio = []
+archives = []
+all_extensions = set()
+unfamiliar_extensions = set()
 
 
 def normalize(name: str) -> str:
@@ -41,6 +53,10 @@ def normalize(name: str) -> str:
 
 def sort_files(path: Path, is_recursive=False):
 
+    global images, video, documents, audio, archives, all_extensions, unfamiliar_extensions
+
+
+
     main_folder_path = Path(sys.argv[1])
 
     if not is_recursive:
@@ -64,30 +80,63 @@ def sort_files(path: Path, is_recursive=False):
 
         file_extension = item.suffix[1:].upper()
 
+        if file_extension:
+            all_extensions.add(file_extension)
+
         if file_extension in EXTENSIONS['images']:
             new_path = main_folder_path.joinpath('images', new_name)
             item.rename(new_path)
+            images.append(new_name)
 
         elif file_extension in EXTENSIONS['video']:
             new_path = main_folder_path.joinpath('video', new_name)
             item.rename(new_path)
+            video.append(new_name)
                         
         elif file_extension in EXTENSIONS['documents']:
             new_path = main_folder_path.joinpath('documents', new_name)
             item.rename(new_path)
+            documents.append(new_name)
                                     
         elif file_extension in EXTENSIONS['audio']:
             new_path = main_folder_path.joinpath('audio', new_name)
             item.rename(new_path)
+            audio.append(new_name)
+            
                                                 
         elif file_extension in EXTENSIONS['archives']:
             archive_name = normalize(item.name).split('.')[0]
             new_path = main_folder_path.joinpath('archives', archive_name)
             shutil.unpack_archive(item, new_path)
             item.unlink()
+            archives.append(new_name)
+
+        else:
+            if file_extension:
+                unfamiliar_extensions.add(file_extension)
+
+
+        results = {
+            'Sorted folder': path.name,
+            'Results': {
+                "Formats": {
+                    'images': images,
+                    'video': video,
+                    'documents': documents,
+                    'audio': audio,
+                    'archives': archives,
+                },
+                'Familiar extensions': list(all_extensions - unfamiliar_extensions),
+                'Unfamiliar extensions': list(unfamiliar_extensions),
+            }
+        }
+
+        with open('results.json', 'w') as file:
+            json.dump(results, file, indent=4, ensure_ascii=False)
+
     
 
-def rename_all_folders(path):
+def rename_all_folders(path: Path):
     
     for item in path.iterdir():
 
