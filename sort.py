@@ -1,4 +1,5 @@
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -80,8 +81,10 @@ def sort_files(path: Path, is_recursive=False):
             item.rename(new_path)
                                                 
         elif file_extension in EXTENSIONS['archives']:
-            new_path = main_folder_path.joinpath('archives', new_name)
-            item.rename(new_path)
+            archive_name = normalize(item.name).split('.')[0]
+            new_path = main_folder_path.joinpath('archives', archive_name)
+            shutil.unpack_archive(item, new_path)
+            item.unlink()
     
 
 def rename_all_folders(path):
