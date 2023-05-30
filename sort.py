@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 
 
-
 EXTENSIONS = {
     'images': ('JPEG', 'PNG', 'JPG', 'SVG'),
     'video': ('AVI', 'MP4', 'MOV', 'MKV'),
@@ -15,8 +14,6 @@ EXTENSIONS = {
 }
 
 folder_names = EXTENSIONS.keys()
-
-
 
 # Some containers to write results
 images = []
@@ -51,13 +48,42 @@ def normalize(name: str) -> str:
     return normalized_name
 
 
+def move_file(file_path: Path, folder_name: str) -> str:
+    '''Moves a file to the specified folder, renames it and returns file name'''
+
+    new_name = normalize(file_path.name)
+
+    main_folder_path = Path(sys.argv[1])
+    
+    new_path = main_folder_path.joinpath(folder_name, new_name)
+
+    while new_path.exists():
+        new_name = f'{new_path.stem}_1{new_path.suffix}'
+        new_path = new_path.with_name(new_name)
+
+    file_path.rename(new_path)
+    return new_name
+
+
+def move_archive(archive_path: Path, folder_name: str) -> str:
+
+    main_folder_path = Path(sys.argv[1])
+
+    archive_name = normalize(archive_path.name).split('.')[0]
+    new_path = main_folder_path.joinpath(folder_name, archive_name)
+
+    while new_path.exists():
+        archive_name = f'{new_path.stem}_1'
+        new_path = new_path.with_name(archive_name)
+
+    shutil.unpack_archive(archive_path, new_path)
+    archive_path.unlink()
+    return archive_name
+
+
 def sort_files(path: Path, is_recursive=False):
 
     global images, video, documents, audio, archives, all_extensions, unfamiliar_extensions
-
-
-
-    main_folder_path = Path(sys.argv[1])
 
     if not is_recursive:
         for folder in folder_names:
@@ -65,8 +91,6 @@ def sort_files(path: Path, is_recursive=False):
             folder_path.mkdir(exist_ok=True)
 
     for item in path.iterdir():
-
-        new_name = normalize(item.name)
 
         if item.is_dir():
             if item.name in folder_names:
@@ -77,44 +101,37 @@ def sort_files(path: Path, is_recursive=False):
             if len(list(item.iterdir())) == 0:
                 item.rmdir()
 
-
         file_extension = item.suffix[1:].upper()
 
         if file_extension:
             all_extensions.add(file_extension)
 
         if file_extension in EXTENSIONS['images']:
-            new_path = main_folder_path.joinpath('images', new_name)
-            item.rename(new_path)
-            images.append(new_name)
+            moved_file = move_file(item, 'images')
+            images.append(moved_file)
 
         elif file_extension in EXTENSIONS['video']:
-            new_path = main_folder_path.joinpath('video', new_name)
-            item.rename(new_path)
-            video.append(new_name)
+            moved_file = move_file(item, 'video')
+            video.append(moved_file)
                         
         elif file_extension in EXTENSIONS['documents']:
-            new_path = main_folder_path.joinpath('documents', new_name)
-            item.rename(new_path)
-            documents.append(new_name)
+            moved_file = move_file(item, 'documents')
+            documents.append(moved_file)
                                     
         elif file_extension in EXTENSIONS['audio']:
-            new_path = main_folder_path.joinpath('audio', new_name)
-            item.rename(new_path)
-            audio.append(new_name)
-            
+            moved_file = move_file(item, 'audio')
+            audio.append(moved_file)
                                                 
         elif file_extension in EXTENSIONS['archives']:
-            archive_name = normalize(item.name).split('.')[0]
-            new_path = main_folder_path.joinpath('archives', archive_name)
-            shutil.unpack_archive(item, new_path)
-            item.unlink()
-            archives.append(new_name)
+            try:
+                archive = move_archive(item, 'archives')
+                archives.append(archive)
+            except shutil.ReadError:
+                continue
 
         else:
             if file_extension:
                 unfamiliar_extensions.add(file_extension)
-
 
         results = {
             'Sorted folder': path.name,
@@ -131,11 +148,10 @@ def sort_files(path: Path, is_recursive=False):
             }
         }
 
-        with open('results.json', 'w') as file:
+        with open(Path(sys.argv[1]).joinpath('results.json'), 'w') as file:
             json.dump(results, file, indent=4, ensure_ascii=False)
 
     
-
 def rename_all_folders(path: Path):
     
     for item in path.iterdir():
