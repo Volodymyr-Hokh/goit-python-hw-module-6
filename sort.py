@@ -66,6 +66,7 @@ def move_file(file_path: Path, folder_name: str) -> str:
 
 
 def move_archive(archive_path: Path, folder_name: str) -> str:
+    '''Unpack archive to the specified folder and returns its name'''
 
     main_folder_path = Path(sys.argv[1])
 
